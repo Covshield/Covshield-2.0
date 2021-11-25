@@ -1,4 +1,5 @@
-#include <SH1106.h>
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_GFX.h>
 #include <Wire.h>
 #include <VL53L1X.h>
 VL53L1X sensor;
@@ -8,7 +9,9 @@ int Czujnik2 = 0;
 bool czujnik1 = false;
 bool czujnik2 = false;
 int i = 0;
-uint8_t oled_buf[WIDTH * HEIGHT / 8];
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(6, 7, 8, 9, 5, 10);
+
 
 void setup()
 {
@@ -20,6 +23,12 @@ void setup()
   Wire.begin();
   Wire.beginTransmission(0x29);
   Serial.begin (9600);
+  tft.begin();
+  tft.fillScreen(ILI9341_MAGENTA);
+  tft.setCursor(30, 30);
+  tft.setTextSize(3);
+  tft.setRotation(3);
+  tft.println("Liczba osob:");
 
   digitalWrite(3, HIGH);
   delay(150);
@@ -66,22 +75,32 @@ void setup()
   Serial.print ("Found ");
   Serial.print (count, DEC);
   Serial.println (" device(s).");
-  SH1106_begin();
-  SH1106_string(0, 0, "Liczba os:", 16, 1, oled_buf);
-  SH1106_display(oled_buf);
+  // SH1106_begin();
+  //SH1106_string(0, 0, "Liczba os:", 16, 1, oled_buf);
+  //SH1106_display(oled_buf);
 }
 
 void displayEntries()
 {
-  SH1106_char(86, 0, 48 + i / 10, 16, 1 , oled_buf);
-  SH1106_char(97, 0, 48 + i % 10, 16, 1 , oled_buf);
-  SH1106_display(oled_buf);
+/*if (i = 9)
+  {
+    tft.setCursor(265, 30);
+    tft.println("  ");
+  }
+else*/
+{
+  tft.setCursor(250, 30);
+  tft.setTextSize(3);
+  tft.setRotation(3);
+  tft.setTextColor(ILI9341_WHITE, ILI9341_MAGENTA);
+  tft.println(i);
+  
 }
-
+}
 void loop()
 {
   sensor.read();
-  if (sensor.read() < 1000)
+  if (sensor.read() < 250)
   {
     Czujnik1 = 1;
   }
@@ -90,7 +109,7 @@ void loop()
     Czujnik1 = 0;
   }
   sensor2.read();
-  if (sensor2.read() < 1000)
+  if (sensor2.read() < 250)
   {
     Czujnik2 = 1;
   }
