@@ -1,49 +1,70 @@
-#include <Adafruit_ILI9341.h>
+#include <Adafruit_ILI9341.h>  
 #include <Adafruit_GFX.h>
 #include <SparkFunMLX90614.h>
-#include <Wire.h>
-#include <vl53lx_class.h>
+#include <Wire.h>                    
+#include <vl53lx_class.h>                 // Libraries   
 #include <Servo.h>
 #include <VL53L1X.h>
+#include <Fonts/FreeSansBold12pt7b.h>     
+
+
 IRTherm therm;
 VL53LX VL53L3CX(&Wire, A1);
 Servo servo;
-VL53L1X sensor1;
+VL53L1X sensor1;                                               // Constructors
 VL53L1X sensor2;
-int measurer1 = 0;
-int measurer2 = 0;
-bool detector1 = false;
-bool detector2 = false;
-int i = 0;
-bool block = false;
 Adafruit_ILI9341 tft = Adafruit_ILI9341(6, 7, 8, 9, 5, 10);
-char report[64];
-int  SingleDistance, NumberOfObject, status, j, blockade = 0, pos = 0, Return = 0;
+
+
 VL53LX_MultiRangingData_t MultiRangingData;
 VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
+
+
+char report[64];
+bool block = false;
+bool detector1 = false;
+bool detector2 = false;
+int i = 0;                                                                               // Variables
+int measurer1 = 0;
+int measurer2 = 0;
+int  SingleDistance, NumberOfObject, status, j, blockade = 0, pos = 0, Return = 0;
+
 
 void setup()
 {
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
-  digitalWrite(2, LOW);
-  digitalWrite(3, LOW);
-  delay(500);
-  Wire.begin();
-  Wire.beginTransmission(0x29);
-  Serial.begin (9600);
+  digitalWrite(2, LOW);     // Pin setting
+  digitalWrite(3, LOW);     
+ 
+  Wire.begin(); 
+  Wire.beginTransmission(0x29);     // SPI adress set 
+  
+  Serial.begin (9600);     // Serial port setting
+  
   tft.begin();
   tft.fillScreen(ILI9341_MAGENTA);
-  tft.setCursor(30, 30);
-  tft.setTextSize(3);
+  tft.setFont(&FreeSansBold12pt7b);
+  tft.setTextSize(2);
   tft.setRotation(3);
-  tft.println("Liczba osob:");
-  servo.attach(4);
+  tft.setCursor(17, 130);
+  tft.println("COVSHIELD");
+  delay(3000);
+  tft.fillScreen(ILI9341_MAGENTA);     // Display setup
+  tft.setCursor(17,45);                    
+  tft.println("COVSHIELD");                     
+  tft.setCursor(17,120);
+  tft.setTextSize(1);
+  tft.println("Number of people:");
+  
+  servo.attach(4);     // Servo set input pin
   therm.begin();
-  therm.setUnit(TEMP_C);
+  
+  therm.setUnit(TEMP_C);     // Temperature unit setting
+  
   VL53L3CX.InitSensor(0x12);
-  VL53L3CX.VL53LX_StartMeasurement();
-
+  
+  VL53L3CX.VL53LX_StartMeasurement();    
   digitalWrite(3, HIGH);
   sensor2.init();
   sensor2.setAddress(0x33);
@@ -51,7 +72,7 @@ void setup()
   sensor1.init();
   sensor1.setROISize(4, 4);
   sensor1.setDistanceMode(VL53L1X::Long);
-  sensor1.setMeasurementTimingBudget(35000);
+  sensor1.setMeasurementTimingBudget(35000);     // TOF sensor setting
   sensor1.startContinuous(15);
   sensor1.setTimeout(35);
   sensor2.setROISize(4, 4);
@@ -61,41 +82,63 @@ void setup()
   sensor2.setTimeout(35);
 }
 
-void displayEntries()
+
+
+void displayEntries()      // Displaying the current number of persons 
 {
-  tft.setCursor(250, 30);
-  tft.setTextSize(3);
-  tft.setRotation(3);
-  tft.setTextColor(ILI9341_WHITE, ILI9341_MAGENTA);
-  tft.println(i);
+  if (i = 9)
+  {
+    tft.setCursor(265, 30);
+    tft.println("  ");
+  }
+  else
+  {
+    tft.setCursor(250, 30);
+    tft.setTextSize(3);
+    tft.setRotation(3);
+    tft.setTextColor(ILI9341_WHITE, ILI9341_MAGENTA);
+    tft.println(i);
+
+  }
 }
 
-void temp()
+
+void temp()     // Temperature check and result of measurment 
 {
   therm.read();
   Serial.println("Object: " + String(therm.object(), 2) + " C");
-  //tft.println(String(therm.object(), 2) + " C");
+  tft.println(String(therm.object(), 2) + " C");
   if (therm.object() >= 37 && therm.object() < 43)
-  {
-    //tft.println("The measurement is successful"); orange
-    //tft.println("You should go out!");    red
+  {   
+    tft.fillScreen(ILI9341_MAGENTA);
+    tft.setCursor(20,120);
+    tft.println("Measurment succesfull!"); 
+    tft.setCursor(20,150);
+    tft.println("Unfortunately, you cannot enter");    
     blockade = 3;
   }
   else if (therm.object() < 37 && therm.object() >= 34)
   {
-    //tft.println("The measurement is successful");  orange
-    //tft.println("You can go inside");   green
-    blockade = 3;
+     tft.fillScreen(ILI9341_MAGENTA);
+     tft.setCursor(20,120);
+     tft.println("Measurment succesfull!");  
+     tft.setCursor(20,150);
+     tft.println("Come on in!");   
+     blockade = 3;
   }
   else
-  {
-    //tft.println("The measurement is failed!");   red
-    //tft.println("You have to do it again");     orange
+  { 
+    tft.fillScreen(ILI9341_MAGENTA);
+    tft.setCursor(20,120);
+    tft.println("Measurment failed!");
+    tft.setCursor(20,150);   
+    tft.println("Try again");     
     blockade = 0;
   }
 }
 
-void distance()
+
+void distance() // person position sensor 
 {
   int no_of_object_found = 0;
   uint8_t NewDataReady = 0;
@@ -125,11 +168,14 @@ void distance()
   delay(50);
 }
 
-void checkTemperature()
+
+void checkTemperature()     // Temperature measurement process
 {
   sensor1.read();
   sensor2.read();
-  //tft.println("Stop and check your temperature");
+  tft.fillScreen(ILI9341_MAGENTA);
+  tft.setCursor(17,100);
+  tft.println("Stop and check your temperature");
   while (sensor1.read() < 500 && sensor2.read() < 500 && blockade == 0 ||
          sensor1.read() < 500 && sensor2.read() > 500 && blockade == 0)
   {
@@ -143,7 +189,8 @@ void checkTemperature()
       servo.write(pos);
       delay(10);
       Serial.println("Silnik obraca w górę  ");
-      //tft.println("Wait for the setting of the pyrometer...");
+      tft.setCursor(17,120);
+      tft.println("Wait, he's aiming at your forehead...");
       SingleDistance = 0;
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
@@ -174,7 +221,8 @@ void checkTemperature()
       servo.write(pos);
       delay(20);
       Serial.println("Silnik obraca w dół  ");
-      //tft.println("Wait for the setting of the pyrometer...");
+      tft.setCursor(17,120);
+      tft.println("Wait, he's aiming at your forehead...");
       SingleDistance = 0;
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
@@ -198,8 +246,10 @@ void checkTemperature()
     }
 
     while (blockade == 1 || blockade == 2)
-    {
-      //tft.println("Bring your forehead 10 cm away from the sensor");
+    { 
+      tft.fillScreen(ILI9341_MAGENTA);
+      tft.setCursor(17,120);
+      tft.println("Bring your forehead 10 cm away from the sensor");
       SingleDistance = 0;
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
@@ -230,6 +280,7 @@ void checkTemperature()
   }
 }
 
+
 void loop()
 {
   sensor1.read();
@@ -239,7 +290,6 @@ void loop()
   sensor2.read();
   if (sensor2.read() < 250) measurer2 = 1;
   else measurer2 = 0;
-
 
   if (measurer1 == 1 && measurer2 == 0)
   {
@@ -280,6 +330,7 @@ void loop()
     detector1 = false;
     detector2 = false;
   }
+
 
   displayEntries();
   Serial.print("Sensor1: ");
