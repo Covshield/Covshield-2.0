@@ -1,11 +1,3 @@
-#include <Adafruit_GFX.h>
-#include <Adafruit_GrayOLED.h>
-#include <Adafruit_SPITFT.h>
-#include <Adafruit_SPITFT_Macros.h>
-#include <gfxfont.h>
-
-#include <Adafruit_ILI9341.h>
-
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_GFX.h>
 #include <Wire.h>
@@ -27,28 +19,24 @@ void setup()
   pinMode(3, OUTPUT);
   digitalWrite(2, LOW);
   digitalWrite(3, LOW);
-  delay(500);
+
   Wire.begin();
   Wire.beginTransmission(0x29);
-  Serial.begin (9600);
+  Serial.begin(9600);
   tft.begin();
   tft.fillScreen(ILI9341_MAGENTA);
   tft.setCursor(30, 30);
   tft.setTextSize(3);
-  tft.setRotation(3);
+  tft.setRotation(1);
   tft.println("Liczba osob:");
 
   digitalWrite(3, HIGH);
-  delay(150);
   sensor2.init();
   Serial.println("01");
-  delay(100);
   sensor2.setAddress(0x33);
   digitalWrite(2, HIGH);
-  delay(150);
   Serial.println("02");
   sensor.init();
-  delay(100);
 
   sensor.setROISize(4, 4);
   sensor.setDistanceMode(VL53L1X::Long);
@@ -83,48 +71,27 @@ void setup()
   Serial.print ("Found ");
   Serial.print (count, DEC);
   Serial.println (" device(s).");
-  // SH1106_begin();
-  //SH1106_string(0, 0, "Liczba os:", 16, 1, oled_buf);
-  //SH1106_display(oled_buf);
 }
 
 void displayEntries()
-{
-/*if (i = 9)
-  {
-    tft.setCursor(265, 30);
-    tft.println("  ");
-  }
-else*/
 {
   tft.setCursor(250, 30);
   tft.setTextSize(3);
   tft.setRotation(3);
   tft.setTextColor(ILI9341_WHITE, ILI9341_MAGENTA);
   tft.println(i);
-  
 }
-}
+
 void loop()
 {
   sensor.read();
-  if (sensor.read() < 250)
-  {
-    Czujnik1 = 1;
-  }
-  else
-  {
-    Czujnik1 = 0;
-  }
+  if (sensor.read() < 250) Czujnik1 = 1;
+  else Czujnik1 = 0;
+  
   sensor2.read();
-  if (sensor2.read() < 250)
-  {
-    Czujnik2 = 1;
-  }
-  else
-  {
-    Czujnik2 = 0;
-  }
+  if (sensor2.read() < 250) Czujnik2 = 1;
+  else Czujnik2 = 0;
+
 
   if (Czujnik1 == 1 && Czujnik2 == 0)
   {
