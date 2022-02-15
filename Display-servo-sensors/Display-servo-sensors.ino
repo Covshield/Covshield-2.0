@@ -23,10 +23,13 @@ VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
 char report[64];
 bool detector1, detector2, block = false;                                   // Variables
 int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
-int SingleDistance, NumberOfObject, j, pos = 0, Return = 0, stoploop = 0;
+int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
 
-unsigned short detectionZone = 500;              // Set active zone on VL53L1X [mm]
+
+unsigned short detectionZone = 500;              // Set active zone on VL53L1X  [mm]
 unsigned short positionSensor = 50;              // Set active zone on VL53L3CX [cm]
+unsigned short Max = 75;                         // Set maximum value for servo [deg]
+unsigned short Min = 30;                         // Set minimum value for servo [deg]
 
 
 void setup()
@@ -57,7 +60,8 @@ void setup()
   tft.println("Number of people:");
 
   servo.attach(4);    // Servo set input pin
-  servo.write(0);
+  servo.write(Min);
+  pos = Min;
 
   therm.begin();
   therm.setUnit(TEMP_C);     // Temperature unit setting
@@ -189,13 +193,13 @@ void checkTemperature()     // Temperature measurement process
   while (sensor1.read() < detectionZone && blockade == 0)
   {
     distance();
-    while (NumberOfObject != 0 && blockade == 0 && pos < 60 && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
+    while (NumberOfObject != 0 && blockade == 0 && pos < Max && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
     {
       sensor1.read();
       sensor2.read();
       ++pos;
       servo.write(pos);
-      if (pos >= 60) blockade = 1;
+      if (pos >= Max) blockade = 1;
       delay(10);
       if (stoploop == 0)
       {
@@ -209,10 +213,10 @@ void checkTemperature()     // Temperature measurement process
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
       distance();
-      if (NumberOfObject == 0 && pos < 60)
+      if (NumberOfObject == 0 && pos < Max)
       {
         blockade = 1;
-        while (Return <= 15 && pos > 0 && pos <= 60 && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
+        while (Return <= 15 && pos > Min && pos <= Max && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
         {
           ++Return;
           --pos;
@@ -225,13 +229,13 @@ void checkTemperature()     // Temperature measurement process
       }
     }
 
-    while (NumberOfObject == 0 && blockade == 0 && pos >= 0 && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
+    while (NumberOfObject == 0 && blockade == 0 && pos >= Min && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
     {
       sensor1.read();
       sensor2.read();
       --pos;
       servo.write(pos);
-      if (pos <= 0) blockade = 2;
+      if (pos <= Min) blockade = 2;
       delay(10);
       if (stoploop == 0)
       {
@@ -245,10 +249,10 @@ void checkTemperature()     // Temperature measurement process
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
       distance();
-      if (NumberOfObject != 0 && pos > 0)
+      if (NumberOfObject != 0 && pos > Min)
       {
         blockade = 2;
-        while (Return <= 15 && pos <= 60 && pos > 0 && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
+        while (Return <= 15 && pos <= Max && pos > Min && sensor1.read() < detectionZone && sensor2.read() < detectionZone)
         {
           ++Return;
           --pos;
