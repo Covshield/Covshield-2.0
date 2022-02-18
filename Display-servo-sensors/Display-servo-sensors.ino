@@ -1,5 +1,5 @@
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_GFX.h>
+#include <Arduino.h>
+#include "Adafruit_ILI9341_Albert.h"
 #include <SparkFunMLX90614.h>
 #include <Wire.h>
 #include <vl53lx_class.h>                 // Libraries   
@@ -13,7 +13,7 @@ VL53LX VL53L3CX(&Wire, A1);
 Servo servo;
 VL53L1X sensor1;                                                  // Constructors
 VL53L1X sensor2;
-Adafruit_ILI9341 tft = Adafruit_ILI9341(6, 7, 8, 9, 5, 10);
+Adafruit_ILI9341_Albert tft = Adafruit_ILI9341_Albert(6, 7, 5);
 
 
 VL53LX_MultiRangingData_t MultiRangingData;
@@ -21,6 +21,9 @@ VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
 
 
 char report[64];
+const byte TFT_DC = 7;
+const byte TFT_CS = 6;
+const byte TFT_RST = 5;
 bool detector1, detector2, block = false;                                   // Variables
 int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
 int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
