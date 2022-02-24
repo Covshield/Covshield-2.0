@@ -22,7 +22,7 @@ void setup()
 
   Wire.begin();
   Wire.beginTransmission(0x29);
-  Serial.begin(9600);
+  Serial.begin(9600); 
   tft.begin();
   tft.fillScreen(ILI9341_MAGENTA);
   tft.setCursor(30, 30);
@@ -137,10 +137,10 @@ void loop()
     czujnik2 = false;
   }
 
-  displayEntries();
+  displayEntries(); 
 
   Serial.print("Czujnik1: ");
   Serial.print(Czujnik1);
   Serial.print("   Czujnik2: ");
-  Serial.println(Czujnik2);
+  Serial.println(Czujnik2); 
 }
