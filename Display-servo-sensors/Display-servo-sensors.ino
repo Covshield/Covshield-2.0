@@ -27,10 +27,10 @@ const byte TFT_RST = 5;
 bool detector1, detector2, block = false;                                   // Variables
 int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
 int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
-
+int staska = 0;
 
 unsigned short detectionZone = 500;              // Set active zone on VL53L1X  [mm]
-unsigned short positionSensor = 50;              // Set active zone on VL53L3CX [cm]
+unsigned short positionSensor = 25;              // Set active zone on VL53L3CX [cm]
 unsigned short Max = 75;                         // Set maximum value for servo [deg]
 unsigned short Min = 30;                         // Set minimum value for servo [deg]
 
@@ -92,13 +92,11 @@ void setup()
 
 void displayEntries()      // Displaying the current number of persons
 {
-  tft.setCursor(250, 100);
   tft.setTextSize(3);
   tft.setTextColor(ILI9341_WHITE, ILI9341_MAGENTA);
   tft.setFont();
+  tft.setCursor(250, 100);
   tft.print(i);
-  //tft.setCursor(230, 76);
-  //tft.print("    ");
 }
 
 
@@ -106,16 +104,16 @@ void temp()     // Temperature check and result of measurment
 {
   therm.read();
   Serial.println("Object: " + String(therm.object(), 2) + " C");
+  tft.fillScreen(ILI9341_MAGENTA);
   tft.setTextSize(3);
   tft.setCursor(40, 140);
   tft.println(String(therm.object(), 2) + " C");
 
   if (therm.object() >= 37 && therm.object() < 43)
   {
-    tft.fillScreen(ILI9341_MAGENTA);
     tft.setTextSize(1);
     tft.setCursor(20, 45);
-    tft.println("Measurment succesfull!"); 
+    tft.println("Measurment succesfull!");
     tft.setCursor(220, 115);
     tft.println("O");
     tft.setCursor(70, 190);
@@ -126,7 +124,6 @@ void temp()     // Temperature check and result of measurment
   }
   else if (therm.object() < 37 && therm.object() >= 34)
   {
-    tft.fillScreen(ILI9341_MAGENTA);
     tft.setTextSize(1);
     tft.setCursor(20, 45);
     tft.println("Measurment succesfull!");
@@ -138,7 +135,6 @@ void temp()     // Temperature check and result of measurment
   }
   else
   {
-    tft.fillScreen(ILI9341_MAGENTA);
     tft.setTextSize(1);
     tft.setCursor(20, 45);
     tft.println("Measurment failed!");
@@ -173,6 +169,7 @@ void distance() // person position sensor
       if (j <= 1) SingleDistance = pMultiRangingData->RangeData[0].RangeMilliMeter / 10;
       NumberOfObject = no_of_object_found;
       if (SingleDistance > positionSensor) NumberOfObject = 0;
+      if (SingleDistance > detectionZone / 10) NumberOfObject = 999;
     }
     Serial.println("");
     Serial.println(NumberOfObject);
@@ -186,13 +183,10 @@ void checkTemperature()     // Temperature measurement process
 {
   sensor1.read();
   sensor2.read();
-  tft.fillScreen(ILI9341_MAGENTA);
-  tft.setFont(&FreeSansBold12pt7b);
-  tft.setTextSize(1);
-  tft.setCursor(40, 50);
-  tft.println("Stop and check your");
-  tft.setCursor(90, 80);
-  tft.println("temperature");
+  SingleDistance = 0;
+  NumberOfObject = 0;
+  status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
+
   while (sensor1.read() < detectionZone && blockade == 0)
   {
     distance();
@@ -206,9 +200,10 @@ void checkTemperature()     // Temperature measurement process
       delay(10);
       if (stoploop == 0)
       {
-        tft.setCursor(15, 170);
+        tft.fillScreen(ILI9341_MAGENTA);
+        tft.setCursor(15, 20);
         tft.println("Wait, he's aiming at your");
-        tft.setCursor(100, 200);
+        tft.setCursor(100, 50);
         tft.println("forehead...");
       }
       stoploop = 1;
@@ -242,9 +237,10 @@ void checkTemperature()     // Temperature measurement process
       delay(10);
       if (stoploop == 0)
       {
-        tft.setCursor(15, 170);
+        tft.fillScreen(ILI9341_MAGENTA);
+        tft.setCursor(15, 20);
         tft.println("Wait, he's aiming at your");
-        tft.setCursor(100, 200);
+        tft.setCursor(100, 50);
         tft.println("forehead...");
       }
       stoploop = 1;
@@ -273,12 +269,11 @@ void checkTemperature()     // Temperature measurement process
     {
       if (stoploop == 0)
       {
-        tft.fillScreen(ILI9341_MAGENTA);
-        tft.setCursor(45, 100);
+        tft.setCursor(45, 140);
         tft.println("Bring your forehead");
-        tft.setCursor(60, 130);
+        tft.setCursor(60, 170);
         tft.println("10 cm away from");
-        tft.setCursor(95, 160);
+        tft.setCursor(95, 200);
         tft.println("the sensor");
       }
       stoploop = 1;
@@ -286,8 +281,8 @@ void checkTemperature()     // Temperature measurement process
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
       distance();
-      //if (SingleDistance < 9) //tft.println("Move away from the sensor");
-      //if (SingleDistance > 11) //tft.println("Move closer to the sensor");
+      //if (SingleDistance < 9) //tft.println("Move away from the sensor"); further
+      //if (SingleDistance > 11) //tft.println("Move closer to the sensor"); closer
 
       if (SingleDistance >= 9 && SingleDistance <= 11) temp();
       sensor1.read();
@@ -297,7 +292,8 @@ void checkTemperature()     // Temperature measurement process
         sensor1.read();       // Wait and display
         sensor2.read();
       }
-      if (sensor1.read() > 500) blockade = 4;
+      if (sensor1.read() > detectionZone) blockade = 4;
+      if (blockade == 0) tft.fillScreen(ILI9341_MAGENTA);
     }
     stoploop = 0;
 
@@ -306,8 +302,9 @@ void checkTemperature()     // Temperature measurement process
     status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
     sensor1.read();
     sensor2.read();
+    
   }
-  tft.fillScreen(ILI9341_MAGENTA);
+  if (blockade == 1 || blockade == 2 || blockade == 3 || blockade == 4) tft.fillScreen(ILI9341_MAGENTA);
   tft.setCursor(17, 45);
   tft.setTextSize(2);
   tft.println("COVSHIELD");
@@ -332,8 +329,15 @@ void loop()
   {
     if (block == false)
     {
-      checkTemperature();
-      blockade = 0;
+      tft.setFont(&FreeSansBold12pt7b);
+      tft.setTextSize(1);
+      tft.setCursor(40, 170);
+      tft.println("Stop and check your");
+      tft.setCursor(90, 200);
+      tft.println("temperature");
+      staska = 1;
+      if (sensor1.read() < 200) checkTemperature();
+      blockade = 0; 
     }
 
     if (detector2 == true)
@@ -350,7 +354,6 @@ void loop()
     if (detector1 == true)
     {
       if (i < 100) ++i;
-
       detector1 = false;
       detector2 = false;
       Serial.println(i);
@@ -363,11 +366,15 @@ void loop()
   }
   else if (measurer1 == 0 && measurer2 == 0)
   {
+    if (staska == 1)
+    {
+      tft.fillRect(0, 140, 320, 100, ILI9341_MAGENTA);
+      staska = 0;
+    }
     block = false;
     detector1 = false;
     detector2 = false;
   }
-
 
   displayEntries();
   Serial.print("Sensor1: ");
