@@ -2,7 +2,7 @@
 #include "Adafruit_ILI9341_Albert.h"
 #include <SparkFunMLX90614.h>
 #include <Wire.h>
-#include <vl53lx_class.h>                 // Libraries   
+#include <vl53lx_class.h>                  // Libraries   
 #include <Servo.h>
 #include <VL53L1X.h>
 #include <Fonts/FreeSansBold12pt7b.h>
