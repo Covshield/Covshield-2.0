@@ -8,6 +8,19 @@
 #include <Fonts/FreeSansBold12pt7b.h>
 
 
+unsigned short detectionZone = 1000;             // Set active zone on VL53L1X  [mm]
+unsigned short positionSensor = 25;              // Set active zone on VL53L3CX [cm]
+unsigned short Max = 75;                         // Set maximum value for servo [deg]
+unsigned short Min = 30;                         // Set minimum value for servo [deg]
+
+
+char report[64];
+const byte TFT_RST = 5, TFT_CS = 6, TFT_DC = 7;
+bool detector1, detector2, block = false, hold = false;                       // Variables
+int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
+int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
+
+
 IRTherm therm;
 VL53LX VL53L3CX(&Wire, A1);
 Servo servo;
@@ -17,21 +30,6 @@ Adafruit_ILI9341_Albert tft = Adafruit_ILI9341_Albert(6, 7, 5);
 
 VL53LX_MultiRangingData_t MultiRangingData;
 VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
-
-
-char report[64];
-const byte TFT_DC = 7;
-const byte TFT_CS = 6;
-const byte TFT_RST = 5;
-bool detector1, detector2, block = false, hold = false;                       // Variables
-int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
-int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
-
-
-unsigned short detectionZone = 1000;             // Set active zone on VL53L1X  [mm]
-unsigned short positionSensor = 25;              // Set active zone on VL53L3CX [cm]
-unsigned short Max = 75;                         // Set maximum value for servo [deg]
-unsigned short Min = 30;                         // Set minimum value for servo [deg]
 
 
 void setup()
