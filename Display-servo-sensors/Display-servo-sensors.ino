@@ -15,7 +15,6 @@ VL53L1X sensor1;                                                  // Constructor
 VL53L1X sensor2;
 Adafruit_ILI9341_Albert tft = Adafruit_ILI9341_Albert(6, 7, 5);
 
-
 VL53LX_MultiRangingData_t MultiRangingData;
 VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
 
@@ -24,12 +23,12 @@ char report[64];
 const byte TFT_DC = 7;
 const byte TFT_CS = 6;
 const byte TFT_RST = 5;
-bool detector1, detector2, block = false;                                   // Variables
+bool detector1, detector2, block = false, hold = false;                       // Variables
 int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0;
 int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
-int staska = 0;
 
-unsigned short detectionZone = 500;              // Set active zone on VL53L1X  [mm]
+
+unsigned short detectionZone = 1000;             // Set active zone on VL53L1X  [mm]
 unsigned short positionSensor = 25;              // Set active zone on VL53L3CX [cm]
 unsigned short Max = 75;                         // Set maximum value for servo [deg]
 unsigned short Min = 30;                         // Set minimum value for servo [deg]
@@ -77,12 +76,12 @@ void setup()
   digitalWrite(2, HIGH);
   sensor1.init();
   sensor1.setROISize(4, 4);
-  sensor1.setDistanceMode(VL53L1X::Long);
+  sensor1.setDistanceMode(VL53L1X::Short);
   sensor1.setMeasurementTimingBudget(35000);     // TOF sensor setting
   sensor1.startContinuous(15);
   sensor1.setTimeout(35);
   sensor2.setROISize(4, 4);
-  sensor2.setDistanceMode(VL53L1X::Long);
+  sensor2.setDistanceMode(VL53L1X::Short);
   sensor2.setMeasurementTimingBudget(35000);
   sensor2.startContinuous(15);
   sensor2.setTimeout(35);
@@ -201,9 +200,9 @@ void checkTemperature()     // Temperature measurement process
       if (stoploop == 0)
       {
         tft.fillScreen(ILI9341_MAGENTA);
-        tft.setCursor(15, 20);
+        tft.setCursor(15, 40);
         tft.println("Wait, he's aiming at your");
-        tft.setCursor(100, 50);
+        tft.setCursor(100, 70);
         tft.println("forehead...");
       }
       stoploop = 1;
@@ -238,9 +237,9 @@ void checkTemperature()     // Temperature measurement process
       if (stoploop == 0)
       {
         tft.fillScreen(ILI9341_MAGENTA);
-        tft.setCursor(15, 20);
+        tft.setCursor(15, 40);
         tft.println("Wait, he's aiming at your");
-        tft.setCursor(100, 50);
+        tft.setCursor(100, 70);
         tft.println("forehead...");
       }
       stoploop = 1;
@@ -335,7 +334,7 @@ void loop()
       tft.println("Stop and check your");
       tft.setCursor(90, 200);
       tft.println("temperature");
-      staska = 1;
+      hold = true;
       if (sensor1.read() < 200) checkTemperature();
       blockade = 0; 
     }
@@ -366,10 +365,10 @@ void loop()
   }
   else if (measurer1 == 0 && measurer2 == 0)
   {
-    if (staska == 1)
+    if (hold == true)
     {
       tft.fillRect(0, 140, 320, 100, ILI9341_MAGENTA);
-      staska = 0;
+      hold = false;
     }
     block = false;
     detector1 = false;
