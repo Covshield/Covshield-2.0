@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "Adafruit_ILI9341_Albert.h"
 #include <SparkFunMLX90614.h>
 #include <Wire.h>
@@ -6,13 +5,12 @@
 #include <Servo.h>
 #include <VL53L1X.h>
 #include <Fonts/FreeSansBold12pt7b.h>
-#include <stdlib.h>
+#include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
 #include <WiFi101.h>
-#include <ArduinoJson.h>
 
-unsigned short detectionZone = 150;             // Set active zone on VL53L1X  [mm]
-unsigned short positionSensor = 25;              // Set active zone on VL53L3CX [cm]
+unsigned short detectionZone = 700;              // Set active zone on VL53L1X  [mm]
+unsigned short positionSensor = 50;              // Set active zone on VL53L3CX [cm]
 unsigned short Max = 75;                         // Set maximum value for servo [deg]
 unsigned short Min = 30;                         // Set minimum value for servo [deg]
 char ssid[] = "iPhone (Paweł)";                  // Enter wifi name
@@ -21,13 +19,14 @@ char pass[] = "iphonePawel";                     // Enter wifi password
 
 char report[64];
 const byte TFT_RST = 5, TFT_CS = 6, TFT_DC = 7;
-bool detector1, detector2, block = false, hold = false, Stop = false;            // Variables
-int measurer1 = 0, measurer2 = 0, i = 0, status1, blockade = 0, stoppage = 0;
+bool detector1, detector2, block = false, hold = false, Stop = false;                 // Variables
+int measurer1, measurer2, i = 0, blockade = 0, stoppage = 0, delayed = 0;
 int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
-int deviceId = 0, maxPeople = 0;
-float maxTemperature = 0;
+const char serverAddress[] = "cov-shield.herokuapp.com";
+int deviceId = 0, maxPeople = 0, port = 80;
 int status = WL_IDLE_STATUS;
-char serverAddress[] = "cov-shield.herokuapp.com";
+String secretKey = "123";
+float maxTemperature = 0;
 
 
 IRTherm therm;
@@ -36,8 +35,8 @@ Servo servo;
 VL53L1X sensor1;                                                  // Constructors
 VL53L1X sensor2;
 Adafruit_ILI9341_Albert tft = Adafruit_ILI9341_Albert(6, 7, 5);
-WiFiSSLClient wifi;
-HttpClient client = HttpClient(wifi, serverAddress, 443);
+WiFiClient wifi;
+HttpClient client = HttpClient(wifi, serverAddress, port);
 
 VL53LX_MultiRangingData_t MultiRangingData;
 VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
@@ -97,8 +96,9 @@ void setup()
   sensor2.setTimeout(35);
 
   ConnectToWiFi();
-  GetConfigurationData();                 
+  GetConfigurationData();
   Serial.println("Setup finished.");
+  SendMeasurement(i);
 }
 
 
@@ -304,9 +304,6 @@ void checkTemperature()     // Temperature measurement process
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
       distance();
-      //if (SingleDistance < 9) //tft.println("Move away from the sensor"); further
-      //if (SingleDistance > 11) //tft.println("Move closer to the sensor"); closer
-
       if (SingleDistance >= 9 && SingleDistance <= 11) temp();
       sensor1.read();
       sensor2.read();
@@ -336,7 +333,7 @@ void checkTemperature()     // Temperature measurement process
     status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
     sensor1.read();
     sensor2.read();
-    
+
   }
   if (blockade == 1 || blockade == 2 || blockade == 3 || blockade == 4) tft.fillScreen(ILI9341_MAGENTA);
   blockade = 0;
@@ -371,12 +368,11 @@ void loop()
       tft.setCursor(90, 200);
       tft.println("temperature");
       hold = true;
-      //if (sensor1.read() < 300) checkTemperature();
-      blockade = 0; 
+
     }
     if (detector2 == true)
     {
-      if ( i > 0) 
+      if ( i > 0)
       {
         --i;
         SendMeasurement(i);
@@ -387,11 +383,21 @@ void loop()
     }
     else detector1 = true;
   }
+  else if (measurer1 == 1 && measurer2 == 1)
+  {
+    if (block == false) ++delayed;
+    if (delayed == 20)
+    {
+      tft.setFont(&FreeSansBold12pt7b);
+      tft.setTextSize(1);
+      checkTemperature();
+    }
+  }
   else if (measurer1 == 0 && measurer2 == 1)
   {
     if (detector1 == true)
     {
-      if (i < 100 && Stop == false) 
+      if (i < 100 && Stop == false)
       {
         ++i;
         SendMeasurement(i);
@@ -413,6 +419,7 @@ void loop()
       tft.fillRect(0, 140, 320, 100, ILI9341_MAGENTA);
       hold = false;
     }
+    delayed = 0;
     block = false;
     detector1 = false;
     detector2 = false;
@@ -426,37 +433,29 @@ void loop()
 }
 
 
-void GetConfigurationData() {
-  SimpleConnectToWiFi();
-  Serial.println("Downloading configuration... please wait...");
-  client.get("/api/admin/configuration/123");
-  int statusCode = client.responseStatusCode();
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  if (statusCode == 200) {
-    String response = client.responseBody();
-    ParseConfigurationResponse(response);
-  }
-  client.stop();
-  WiFi.end();
-}
 
 void ConnectToWiFi() {
   while ( status != WL_CONNECTED) {
-    Serial.println("Attempting to connect to Network named: ");
+    Serial.print("Attempting to connect to Network named: ");
+    Serial.println(ssid);
     status = WiFi.begin(ssid, pass);
-    delay(10);
   }
-  Serial.print("Connected to wifi: ");
+  Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
 }
 
-void SimpleConnectToWiFi() {
-  status = WiFi.begin(ssid, pass);
-  while ( status != WL_CONNECTED) {
-    status = WiFi.begin(ssid, pass);
-    delay(10);
-  }
+void GetConfigurationData() {
+  Serial.println("Getting configuration... ");
+  String path = "/api/admin/configuration/" + secretKey;
+  client.get(path);
+  int statusCode = client.responseStatusCode();
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  String response = client.responseBody();
+  ParseConfigurationResponse(response);
 }
 
 void ParseConfigurationResponse(String response) {
@@ -473,9 +472,9 @@ void ParseConfigurationResponse(String response) {
   Serial.print("Max temperature: ");
   Serial.println(maxTemperature);
 }
+
 void SendMeasurement(int peopleCount) {
-  Serial.println("Sending measurement to server... ");
-  SimpleConnectToWiFi();
+  client = HttpClient(wifi, serverAddress, port);
   String object = "{\"deviceId\":\"";
   object += deviceId;
   object += "\",\"peopleCount\":\"";
@@ -485,9 +484,6 @@ void SendMeasurement(int peopleCount) {
   String path = "/api/measurement";
   String contentType = "application/json";
   client.post(path, contentType, object);
-  int statusCode = client.responseStatusCode();
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  client.stop();
-  WiFi.end();
+  //client.endRequest();
+  Serial.println("Finished ");
 }
