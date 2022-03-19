@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "Adafruit_ILI9341_Albert.h"
 #include <SparkFunMLX90614.h>
 #include <Wire.h>
@@ -8,7 +7,7 @@
 #include <Fonts/FreeSansBold12pt7b.h>
 
 
-unsigned short detectionZone = 600;             // Set active zone on VL53L1X  [mm]
+unsigned short detectionZone = 700;              // Set active zone on VL53L1X  [mm]
 unsigned short positionSensor = 50;              // Set active zone on VL53L3CX [cm]
 unsigned short Max = 75;                         // Set maximum value for servo [deg]
 unsigned short Min = 30;                         // Set minimum value for servo [deg]
@@ -16,8 +15,8 @@ unsigned short Min = 30;                         // Set minimum value for servo 
 
 char report[64];
 const byte TFT_RST = 5, TFT_CS = 6, TFT_DC = 7;
-bool detector1, detector2, block = false, hold = false, Stop = false;            // Variables
-int measurer1 = 0, measurer2 = 0, i = 0, status, blockade = 0, stoppage = 0;
+bool detector1, detector2, block = false, hold = false, Stop = false;               // Variables
+int measurer1, measurer2, i = 0, status, blockade = 0, stoppage = 0, delayed = 0;
 int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
 
 
@@ -289,9 +288,6 @@ void checkTemperature()     // Temperature measurement process
       NumberOfObject = 0;
       status = VL53L3CX.VL53LX_ClearInterruptAndStartMeasurement();
       distance();
-      //if (SingleDistance < 9) //tft.println("Move away from the sensor"); further
-      //if (SingleDistance > 11) //tft.println("Move closer to the sensor"); closer
-
       if (SingleDistance >= 9 && SingleDistance <= 11) temp();
       sensor1.read();
       sensor2.read();
@@ -356,8 +352,6 @@ void loop()
       tft.setCursor(90, 200);
       tft.println("temperature");
       hold = true;
-      if (sensor1.read() < 300) checkTemperature();
-      blockade = 0;
     }
     if (detector2 == true)
     {
@@ -367,6 +361,16 @@ void loop()
       Serial.println(i);
     }
     else detector1 = true;
+  }
+  else if (measurer1 == 1 && measurer2 == 1)
+  {
+    if (block == false) ++delayed;
+    if (delayed == 20)
+    {
+      tft.setFont(&FreeSansBold12pt7b);
+      tft.setTextSize(1);
+      checkTemperature();
+    }
   }
   else if (measurer1 == 0 && measurer2 == 1)
   {
@@ -391,6 +395,7 @@ void loop()
       tft.fillRect(0, 140, 320, 100, ILI9341_MAGENTA);
       hold = false;
     }
+    delayed = 0;
     block = false;
     detector1 = false;
     detector2 = false;

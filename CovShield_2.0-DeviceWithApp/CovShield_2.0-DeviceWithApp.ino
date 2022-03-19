@@ -1,8 +1,8 @@
 #include "Adafruit_ILI9341_Albert.h"
 #include <SparkFunMLX90614.h>
 #include <Wire.h>
-#include <vl53lx_class.h>                 // Libraries   
-#include <Servo.h>
+#include <vl53lx_class.h>
+#include <Servo.h>                        // Libraries   
 #include <VL53L1X.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <ArduinoJson.h>
@@ -19,9 +19,9 @@ char pass[] = "iphonePawel";                     // Enter wifi password
 
 char report[64];
 const byte TFT_RST = 5, TFT_CS = 6, TFT_DC = 7;
-bool detector1, detector2, block = false, hold = false, Stop = false;                 // Variables
+bool detector1, detector2, block = false, hold = false, Stop = false;
 int measurer1, measurer2, i = 0, blockade = 0, stoppage = 0, delayed = 0;
-int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;
+int SingleDistance, NumberOfObject, pos, j, Return = 0, stoploop = 0;           // Variables
 const char serverAddress[] = "cov-shield.herokuapp.com";
 int deviceId = 0, maxPeople = 0, port = 80;
 int status = WL_IDLE_STATUS;
@@ -96,7 +96,7 @@ void setup()
   sensor2.setTimeout(35);
 
   ConnectToWiFi();
-  GetConfigurationData();
+  GetConfigurationData();                     //Wifi connection
   Serial.println("Setup finished.");
   SendMeasurement(i);
 }
@@ -368,7 +368,6 @@ void loop()
       tft.setCursor(90, 200);
       tft.println("temperature");
       hold = true;
-
     }
     if (detector2 == true)
     {
@@ -402,6 +401,7 @@ void loop()
         ++i;
         SendMeasurement(i);
       }
+      Stop = false;
       detector1 = false;
       detector2 = false;
       Serial.println(i);
